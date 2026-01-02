@@ -16,7 +16,8 @@ dependencies:
   google_fonts: ^6.3.3
   responsive_sizer: ^3.3.1
   page_transition: ^2.2.1
-
+  uuid:  ^4.0.0
+  
   # 🔥 FIREBASE (ICI ET PAS AILLEURS)
   firebase_core: ^3.6.0
   firebase_auth: ^5.3.0

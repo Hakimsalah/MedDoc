@@ -28,14 +28,13 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
     super.dispose();
   }
 
-  // ✅ Format date sans locale
   String formatDate(DateTime date) {
     const months = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
     return '${date.day. toString().padLeft(2, '0')} ${months[date.month - 1]} ${date.year}';
   }
 
   String formatTime(DateTime date) {
-    return '${date.hour. toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+    return '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
   }
 
   String formatDateFull(DateTime date) {
@@ -53,30 +52,30 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
         title:  Text(
           'Mes Rendez-vous',
           style: GoogleFonts.inter(
-            fontSize: 20. sp,
+            fontSize: 20.sp,
             fontWeight: FontWeight.bold,
             color: Colors.white,
           ),
         ),
         bottom: TabBar(
-          controller:  _tabController,
+          controller: _tabController,
           indicatorColor: Colors.white,
           indicatorWeight: 3,
           labelColor: Colors.white,
-          unselectedLabelColor: Colors.white70,
+          unselectedLabelColor: Colors. white70,
           labelStyle: GoogleFonts.inter(fontWeight: FontWeight.w600),
           isScrollable: true,
           tabs: const [
             Tab(text: 'En attente'),
             Tab(text: 'Confirmés'),
             Tab(text: 'Terminés'),
-            Tab(text:  'Annulés'),
+            Tab(text: 'Annulés'),
           ],
         ),
       ),
       body: TabBarView(
-        controller:  _tabController,
-        children:  [
+        controller: _tabController,
+        children: [
           _buildAppointmentList('pending'),
           _buildAppointmentList('confirmed'),
           _buildAppointmentList('completed'),
@@ -92,7 +91,6 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
     );
   }
 
-  // ✅ 1. Lire les rendez-vous du docteur actuel filtré par doctorId
   Widget _buildAppointmentList(String status) {
     return FutureBuilder<List<Map<String, dynamic>>>(
       future: _getAppointmentsByStatus(status),
@@ -107,7 +105,7 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(Icons.calendar_today, size: 80, color: Colors.grey[300]),
-                SizedBox(height: 2. h),
+                SizedBox(height: 2.h),
                 Text('Aucun rendez-vous', style: GoogleFonts.inter(fontSize: 18. sp, color: Colors.grey[600])),
               ],
             ),
@@ -130,10 +128,10 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
   }
 
   Future<List<Map<String, dynamic>>> _getAppointmentsByStatus(String status) async {
-    final snapshot = await FirebaseFirestore. instance
+    final snapshot = await FirebaseFirestore.instance
         .collection('appointments')
-        .where('doctorId', isEqualTo: user?. uid)
-        .where('status', isEqualTo: status)
+        .where('doctorId', isEqualTo:  user?.uid)
+        .where('status', isEqualTo:  status)
         .get();
 
     var docs = snapshot.docs. toList();
@@ -142,10 +140,26 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
       final aData = a.data();
       final bData = b. data();
 
-      if (aData['date'] != null && bData['date'] != null) {
-        final aDate = (aData['date'] as Timestamp).toDate();
-        final bDate = (bData['date'] as Timestamp).toDate();
-        return (status == 'completed' || status == 'rejected') ? bDate.compareTo(aDate) : aDate.compareTo(bDate);
+      try {
+        if (aData['date'] != null && bData['date'] != null) {
+          DateTime aDate, bDate;
+
+          if (aData['date'] is Timestamp) {
+            aDate = (aData['date'] as Timestamp).toDate();
+          } else {
+            aDate = DateTime.now();
+          }
+
+          if (bData['date'] is Timestamp) {
+            bDate = (bData['date'] as Timestamp).toDate();
+          } else {
+            bDate = DateTime. now();
+          }
+
+          return (status == 'completed' || status == 'rejected') ? bDate.compareTo(aDate) : aDate.compareTo(bDate);
+        }
+      } catch (e) {
+        print('Error sorting:  $e');
       }
       return 0;
     });
@@ -158,9 +172,30 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
   }
 
   Widget _buildAppointmentCard(Map<String, dynamic> data, String docId, String status) {
-    final date = (data['date'] as Timestamp).toDate();
+    DateTime date;
+    try {
+      if (data['date'] is Timestamp) {
+        date = (data['date'] as Timestamp).toDate();
+      } else {
+        date = DateTime.now();
+      }
+    } catch (e) {
+      date = DateTime. now();
+    }
+
     final dateStr = formatDate(date);
     final timeStr = formatTime(date);
+
+    String patientInitial = 'P';
+    String patientName = 'Patient';
+
+    if (data['patientName'] != null) {
+      final name = data['patientName']. toString().trim();
+      if (name.isNotEmpty) {
+        patientName = name;
+        patientInitial = name. substring(0, 1).toUpperCase();
+      }
+    }
 
     Color statusColor;
     String statusText;
@@ -216,23 +251,23 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
                           radius: 25,
                           backgroundColor: const Color(0xFF03BE96).withOpacity(0.1),
                           child: Text(
-                            (data['patientName'] ??  'P').substring(0, 1).toUpperCase(),
-                            style: GoogleFonts.inter(fontSize: 20. sp, fontWeight: FontWeight. bold, color: const Color(0xFF03BE96)),
+                            patientInitial,
+                            style: GoogleFonts.inter(fontSize: 20.sp, fontWeight: FontWeight.bold, color: const Color(0xFF03BE96)),
                           ),
                         ),
                         SizedBox(width: 3.w),
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(data['patientName'] ?? 'Patient', style: GoogleFonts. inter(fontSize: 16.sp, fontWeight: FontWeight.bold)),
-                            Text(data['patientEmail'] ?? '', style: GoogleFonts.inter(fontSize: 13.sp, color: Colors.grey[600])),
+                            Text(patientName, style: GoogleFonts.inter(fontSize: 16.sp, fontWeight: FontWeight.bold)),
+                            Text(data['patientEmail']?. toString() ?? '', style: GoogleFonts.inter(fontSize: 13.sp, color: Colors.grey[600])),
                           ],
                         ),
                       ],
                     ),
                     Container(
                       padding: EdgeInsets.symmetric(horizontal: 3.w, vertical: 1.h),
-                      decoration: BoxDecoration(color: statusColor.withOpacity(0.1), borderRadius: BorderRadius.circular(20)),
+                      decoration: BoxDecoration(color: statusColor. withOpacity(0.1), borderRadius: BorderRadius.circular(20)),
                       child: Row(
                         children: [
                           Icon(statusIcon, size: 16, color: statusColor),
@@ -245,7 +280,7 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
                 ),
                 SizedBox(height: 2.h),
                 Divider(color: Colors.grey[200]),
-                SizedBox(height: 1.h),
+                SizedBox(height:  1.h),
                 Row(
                   children: [
                     Icon(Icons.calendar_today, size: 18, color: Colors.grey[600]),
@@ -256,22 +291,37 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
                     SizedBox(width: 2.w),
                     Text(timeStr, style: GoogleFonts.inter(fontSize: 14.sp, color: Colors.grey[700])),
                     const Spacer(),
-                    // ✅ 2. Bouton modifier l'heure
                     IconButton(
                       icon: const Icon(Icons.edit, size: 20),
                       color: const Color(0xFF03BE96),
-                      onPressed:  () => _showEditTimeDialog(data, docId),
+                      onPressed: () => _showEditTimeDialog(data, docId),
                     ),
                   ],
                 ),
                 SizedBox(height: 1.h),
                 Row(
                   children: [
-                    Icon(Icons.medical_services, size: 18, color: Colors.grey[600]),
+                    Icon(Icons.medical_services, size: 18, color:  Colors.grey[600]),
                     SizedBox(width: 2.w),
-                    Expanded(child: Text(data['reason'] ?? 'Consultation générale', style: GoogleFonts.inter(fontSize: 14.sp, color: Colors.grey[700]))),
+                    Expanded(child: Text(data['reason']?.toString() ?? 'Consultation générale', style: GoogleFonts.inter(fontSize: 14.sp, color: Colors.grey[700]))),
                   ],
                 ),
+                if (data['link'] != null && data['link']. toString().isNotEmpty) ...[
+                  SizedBox(height:  1.h),
+                  Row(
+                    children: [
+                      Icon(Icons.link, size: 18, color:  Colors.grey[600]),
+                      SizedBox(width: 2.w),
+                      Expanded(
+                        child: Text(
+                          data['link'].toString(),
+                          style: GoogleFonts.inter(fontSize: 13.sp, color: const Color(0xFF03BE96)),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ],
             ),
           ),
@@ -290,13 +340,13 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
                         backgroundColor: const Color(0xFF03BE96),
                         foregroundColor: Colors. white,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        padding: EdgeInsets.symmetric(vertical: 1.5.h),
+                        padding: EdgeInsets.symmetric(vertical: 1.5. h),
                       ),
                     ),
                   ),
-                  SizedBox(width:  2.w),
+                  SizedBox(width: 2.w),
                   Expanded(
-                    child:  OutlinedButton.icon(
+                    child: OutlinedButton.icon(
                       onPressed: () => _updateAppointmentStatus(docId, 'rejected'),
                       icon: const Icon(Icons.close, size: 18),
                       label: Text('Refuser', style: GoogleFonts. inter(fontWeight: FontWeight. w600)),
@@ -313,7 +363,7 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
             ),
           ] else if (status == 'confirmed') ...[
             Container(
-              decoration: BoxDecoration(color: Colors.grey[50], borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(15), bottomRight: Radius.circular(15))),
+              decoration: BoxDecoration(color: Colors.grey[50], borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(15), bottomRight: Radius. circular(15))),
               padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 2.h),
               child: ElevatedButton.icon(
                 onPressed: () => _updateAppointmentStatus(docId, 'completed'),
@@ -333,9 +383,18 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
     );
   }
 
-  // ✅ 2. Modifier l'heure
   void _showEditTimeDialog(Map<String, dynamic> data, String docId) {
-    final currentDate = (data['date'] as Timestamp).toDate();
+    DateTime currentDate;
+    try {
+      if (data['date'] is Timestamp) {
+        currentDate = (data['date'] as Timestamp).toDate();
+      } else {
+        currentDate = DateTime.now();
+      }
+    } catch (e) {
+      currentDate = DateTime.now();
+    }
+
     DateTime selectedDate = currentDate;
     TimeOfDay selectedTime = TimeOfDay.fromDateTime(currentDate);
 
@@ -349,11 +408,11 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
               mainAxisSize: MainAxisSize.min,
               children: [
                 ListTile(
-                  leading: const Icon(Icons.calendar_today),
-                  title: Text(formatDateFull(selectedDate)),
+                  leading:  const Icon(Icons.calendar_today),
+                  title:  Text(formatDateFull(selectedDate)),
                   trailing: const Icon(Icons.edit),
                   onTap:  () async {
-                    final picked = await showDatePicker(context: context, initialDate: selectedDate, firstDate: DateTime.now(), lastDate: DateTime. now().add(const Duration(days: 365)));
+                    final picked = await showDatePicker(context: context, initialDate: selectedDate, firstDate: DateTime. now(), lastDate: DateTime. now().add(const Duration(days: 365)));
                     if (picked != null) setDialogState(() => selectedDate = picked);
                   },
                 ),
@@ -361,7 +420,7 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
                   leading: const Icon(Icons.access_time),
                   title: Text(selectedTime.format(context)),
                   trailing: const Icon(Icons. edit),
-                  onTap:  () async {
+                  onTap: () async {
                     final picked = await showTimePicker(context: context, initialTime: selectedTime);
                     if (picked != null) setDialogState(() => selectedTime = picked);
                   },
@@ -398,13 +457,13 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
     }
   }
 
-  // ✅ 3. Créer un rendez-vous avec un patient existant
   void _showCreateAppointmentDialog() {
-    String? selectedPatientId;
+    String?  selectedPatientEmail;
+    String selectedPatientId = '';
     String selectedPatientName = '';
-    String selectedPatientEmail = '';
     final reasonCtrl = TextEditingController();
     final notesCtrl = TextEditingController();
+    final linkCtrl = TextEditingController();
 
     DateTime selectedDate = DateTime.now().add(const Duration(days: 1));
     TimeOfDay selectedTime = const TimeOfDay(hour: 9, minute: 0);
@@ -419,56 +478,99 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
               child:  Column(
                 mainAxisSize:  MainAxisSize.min,
                 children: [
-                  // Sélection patient
-                  StreamBuilder<QuerySnapshot>(
-                    stream: FirebaseFirestore.instance.collection('users').where('role', isEqualTo: 'patient').snapshots(),
+                  FutureBuilder<QuerySnapshot>(
+                    future: FirebaseFirestore.instance.collection('users').where('role', isEqualTo: 'patient').get(),
                     builder: (context, snapshot) {
-                      if (! snapshot.hasData) return const CircularProgressIndicator();
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Padding(
+                          padding: EdgeInsets.all(20.0),
+                          child: CircularProgressIndicator(),
+                        );
+                      }
+
+                      if (!snapshot.hasData || snapshot.data!.docs. isEmpty) {
+                        return const Padding(
+                          padding: EdgeInsets.all(20.0),
+                          child: Text('Aucun patient trouvé'),
+                        );
+                      }
 
                       List<DropdownMenuItem<String>> patientItems = snapshot.data!.docs.map((doc) {
                         final data = doc.data() as Map<String, dynamic>;
-                        return DropdownMenuItem<String>(value: doc.id, child: Text(data['name'] ?? 'Patient'));
+                        return DropdownMenuItem<String>(
+                          value: data['email'],
+                          child: Text(data['email'] ?? 'Email non renseigné'),
+                        );
                       }).toList();
 
                       return DropdownButtonFormField<String>(
-                        decoration: const InputDecoration(labelText: 'Sélectionner un patient', border: OutlineInputBorder(), prefixIcon: Icon(Icons. person)),
-                        value: selectedPatientId,
+                        decoration: const InputDecoration(
+                          labelText: 'Sélectionner un patient (Email)',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.email),
+                        ),
+                        value: selectedPatientEmail,
                         items: patientItems,
                         onChanged: (value) {
-                          final selectedDoc = snapshot.data!.docs. firstWhere((doc) => doc.id == value);
+                          final selectedDoc = snapshot.data!.docs. firstWhere((doc) => (doc.data() as Map<String, dynamic>)['email'] == value);
                           final data = selectedDoc.data() as Map<String, dynamic>;
                           setDialogState(() {
-                            selectedPatientId = value;
-                            selectedPatientName = data['name'] ?? '';
-                            selectedPatientEmail = data['email'] ?? '';
+                            selectedPatientEmail = value;
+                            selectedPatientId = selectedDoc.id;
+                            selectedPatientName = data['name'] ?? 'Patient';
                           });
                         },
                       );
                     },
                   ),
-                  SizedBox(height:  2.h),
+                  SizedBox(height: 2.h),
                   ListTile(
                     leading:  const Icon(Icons.calendar_today),
                     title:  Text(formatDateFull(selectedDate)),
                     trailing: const Icon(Icons.edit),
-                    onTap:  () async {
-                      final picked = await showDatePicker(context: context, initialDate: selectedDate, firstDate: DateTime.now(), lastDate: DateTime.now().add(const Duration(days: 365)));
+                    onTap: () async {
+                      final picked = await showDatePicker(context: context, initialDate: selectedDate, firstDate: DateTime.now(), lastDate: DateTime. now().add(const Duration(days: 365)));
                       if (picked != null) setDialogState(() => selectedDate = picked);
                     },
                   ),
                   ListTile(
-                    leading:  const Icon(Icons.access_time),
+                    leading: const Icon(Icons.access_time),
                     title: Text(selectedTime.format(context)),
-                    trailing: const Icon(Icons.edit),
+                    trailing:  const Icon(Icons.edit),
                     onTap: () async {
-                      final picked = await showTimePicker(context: context, initialTime:  selectedTime);
+                      final picked = await showTimePicker(context: context, initialTime: selectedTime);
                       if (picked != null) setDialogState(() => selectedTime = picked);
                     },
                   ),
-                  SizedBox(height:  2.h),
-                  TextField(controller: reasonCtrl, decoration: const InputDecoration(labelText: 'Motif', border: OutlineInputBorder(), prefixIcon: Icon(Icons. medical_services))),
                   SizedBox(height: 2.h),
-                  TextField(controller: notesCtrl, maxLines: 3, decoration: const InputDecoration(labelText: 'Notes (optionnel)', border: OutlineInputBorder(), prefixIcon: Icon(Icons.note))),
+                  TextField(
+                    controller: reasonCtrl,
+                    decoration: const InputDecoration(
+                      labelText: 'Motif',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons. medical_services),
+                    ),
+                  ),
+                  SizedBox(height: 2.h),
+                  TextField(
+                    controller: linkCtrl,
+                    decoration:  const InputDecoration(
+                      labelText: 'Lien de consultation (optionnel)',
+                      hintText: 'Ex: https://meet.google.com/abc-defg',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons. link),
+                    ),
+                  ),
+                  SizedBox(height: 2.h),
+                  TextField(
+                    controller: notesCtrl,
+                    maxLines: 3,
+                    decoration: const InputDecoration(
+                      labelText: 'Notes (optionnel)',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.note),
+                    ),
+                  ),
                 ],
               ),
             );
@@ -478,16 +580,24 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
           TextButton(onPressed: () => Navigator.pop(context), child: Text('Annuler', style: GoogleFonts.inter(color: Colors.grey))),
           ElevatedButton(
             onPressed: () async {
-              if (selectedPatientId == null || reasonCtrl.text.isEmpty) {
+              if (selectedPatientEmail == null || reasonCtrl.text.isEmpty) {
                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Veuillez remplir tous les champs'), backgroundColor: Colors.red));
                 return;
               }
 
               final appointmentDate = DateTime(selectedDate.year, selectedDate.month, selectedDate. day, selectedTime.hour, selectedTime.minute);
-              await _createAppointment(selectedPatientId!, selectedPatientName, selectedPatientEmail, appointmentDate, reasonCtrl.text, notesCtrl.text);
+              await _createAppointment(
+                selectedPatientId,
+                selectedPatientName,
+                selectedPatientEmail! ,
+                appointmentDate,
+                reasonCtrl.text,
+                notesCtrl.text,
+                linkCtrl.text,
+              );
               if (mounted) Navigator.pop(context);
             },
-            style: ElevatedButton. styleFrom(backgroundColor: const Color(0xFF03BE96)),
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF03BE96)),
             child: Text('Créer', style: GoogleFonts.inter(color: Colors.white)),
           ),
         ],
@@ -495,31 +605,42 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
     );
   }
 
-  Future<void> _createAppointment(String patientId, String patientName, String patientEmail, DateTime date, String reason, String notes) async {
+  Future<void> _createAppointment(
+    String patientId,
+    String patientName,
+    String patientEmail,
+    DateTime date,
+    String reason,
+    String notes,
+    String link,
+  ) async {
     try {
       final doctorDoc = await FirebaseFirestore.instance.collection('users').doc(user?. uid).get();
       final doctorName = doctorDoc.data()?['name'] ?? 'Doctor';
+      final doctorEmail = user?.email ?? '';
 
-      await FirebaseFirestore.instance.collection('appointments').add({
+      await FirebaseFirestore. instance.collection('appointments').add({
         'doctorId': user?.uid,
         'doctorName': 'Dr. $doctorName',
+        'doctorEmail': doctorEmail,
         'patientId': patientId,
         'patientName': patientName,
-        'patientEmail': patientEmail,
+        'patientEmail':  patientEmail,
         'date': Timestamp.fromDate(date),
         'reason': reason,
         'notes': notes,
+        'link': link,
         'status': 'confirmed',
         'createdAt':  FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
       if (mounted) {
-        ScaffoldMessenger. of(context).showSnackBar(const SnackBar(content: Text('Rendez-vous créé! '), backgroundColor: Colors.green));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:  Text('Rendez-vous créé! '), backgroundColor: Colors.green));
         setState(() {});
       }
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur:  ${e.toString()}'), backgroundColor: Colors.red));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur: ${e.toString()}'), backgroundColor: Colors.red));
     }
   }
 
