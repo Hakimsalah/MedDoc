@@ -3,7 +3,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:responsive_sizer/responsive_sizer.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:intl/intl.dart';
 
 class DoctorAppointmentsScreen extends StatefulWidget {
   const DoctorAppointmentsScreen({super.key});
@@ -15,12 +14,12 @@ class DoctorAppointmentsScreen extends StatefulWidget {
 class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  final user = FirebaseAuth.instance. currentUser;
+  final user = FirebaseAuth.instance.currentUser;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length:  4, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
   }
 
   @override
@@ -29,26 +28,41 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
     super.dispose();
   }
 
+  // ✅ Format date sans locale
+  String formatDate(DateTime date) {
+    const months = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
+    return '${date.day. toString().padLeft(2, '0')} ${months[date.month - 1]} ${date.year}';
+  }
+
+  String formatTime(DateTime date) {
+    return '${date.hour. toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+  }
+
+  String formatDateFull(DateTime date) {
+    const months = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+    return '${date.day} ${months[date.month - 1]} ${date.year}';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors. grey[50],
+      backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        backgroundColor:  const Color(0xFF03BE96),
+        backgroundColor: const Color(0xFF03BE96),
         elevation: 0,
-        title: Text(
+        title:  Text(
           'Mes Rendez-vous',
           style: GoogleFonts.inter(
-            fontSize: 20.sp,
+            fontSize: 20. sp,
             fontWeight: FontWeight.bold,
             color: Colors.white,
           ),
         ),
         bottom: TabBar(
-          controller: _tabController,
-          indicatorColor: Colors. white,
-          indicatorWeight:  3,
-          labelColor:  Colors.white,
+          controller:  _tabController,
+          indicatorColor: Colors.white,
+          indicatorWeight: 3,
+          labelColor: Colors.white,
           unselectedLabelColor: Colors.white70,
           labelStyle: GoogleFonts.inter(fontWeight: FontWeight.w600),
           isScrollable: true,
@@ -56,13 +70,13 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
             Tab(text: 'En attente'),
             Tab(text: 'Confirmés'),
             Tab(text: 'Terminés'),
-            Tab(text: 'Annulés'),
+            Tab(text:  'Annulés'),
           ],
         ),
       ),
       body: TabBarView(
-        controller: _tabController,
-        children: [
+        controller:  _tabController,
+        children:  [
           _buildAppointmentList('pending'),
           _buildAppointmentList('confirmed'),
           _buildAppointmentList('completed'),
@@ -70,26 +84,15 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
         ],
       ),
       floatingActionButton: FloatingActionButton. extended(
-        onPressed: () {
-          // TODO: Add create appointment functionality
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Fonctionnalité à venir:  Créer un rendez-vous'),
-              backgroundColor: Colors.blue,
-            ),
-          );
-        },
+        onPressed: _showCreateAppointmentDialog,
         backgroundColor: const Color(0xFF03BE96),
         icon: const Icon(Icons.add),
-        label: Text(
-          'Nouveau RDV',
-          style: GoogleFonts.inter(fontWeight: FontWeight.w600),
-        ),
+        label: Text('Nouveau RDV', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
       ),
     );
   }
 
-  // ✅ FIXED: Use FutureBuilder instead of StreamBuilder to avoid Firestore errors
+  // ✅ 1. Lire les rendez-vous du docteur actuel filtré par doctorId
   Widget _buildAppointmentList(String status) {
     return FutureBuilder<List<Map<String, dynamic>>>(
       future: _getAppointmentsByStatus(status),
@@ -98,29 +101,21 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
           return const Center(child: CircularProgressIndicator());
         }
 
-        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+        if (! snapshot.hasData || snapshot.data!.isEmpty) {
           return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(Icons.calendar_today, size: 80, color: Colors.grey[300]),
-                SizedBox(height: 2.h),
-                Text(
-                  'Aucun rendez-vous',
-                  style: GoogleFonts.inter(
-                    fontSize: 18.sp,
-                    color: Colors.grey[600],
-                  ),
-                ),
+                SizedBox(height: 2. h),
+                Text('Aucun rendez-vous', style: GoogleFonts.inter(fontSize: 18. sp, color: Colors.grey[600])),
               ],
             ),
           );
         }
 
         return RefreshIndicator(
-          onRefresh: () async {
-            setState(() {}); // Refresh the FutureBuilder
-          },
+          onRefresh: () async => setState(() {}),
           child: ListView.builder(
             padding: EdgeInsets.all(3.w),
             itemCount: snapshot.data!.length,
@@ -134,31 +129,23 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
     );
   }
 
-  // ✅ NEW: Get appointments by status as Future (no compound queries)
   Future<List<Map<String, dynamic>>> _getAppointmentsByStatus(String status) async {
-    final snapshot = await FirebaseFirestore.instance
+    final snapshot = await FirebaseFirestore. instance
         .collection('appointments')
-        .where('doctorId', isEqualTo:  user?.uid)
-        .where('status', isEqualTo:  status)
+        .where('doctorId', isEqualTo: user?. uid)
+        .where('status', isEqualTo: status)
         .get();
 
     var docs = snapshot.docs. toList();
 
-    // Sort by date in memory
     docs.sort((a, b) {
       final aData = a.data();
       final bData = b. data();
-      
+
       if (aData['date'] != null && bData['date'] != null) {
         final aDate = (aData['date'] as Timestamp).toDate();
         final bDate = (bData['date'] as Timestamp).toDate();
-        
-        // Descending for completed/rejected, ascending for others
-        if (status == 'completed' || status == 'rejected') {
-          return bDate.compareTo(aDate);
-        } else {
-          return aDate.compareTo(bDate);
-        }
+        return (status == 'completed' || status == 'rejected') ? bDate.compareTo(aDate) : aDate.compareTo(bDate);
       }
       return 0;
     });
@@ -172,8 +159,8 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
 
   Widget _buildAppointmentCard(Map<String, dynamic> data, String docId, String status) {
     final date = (data['date'] as Timestamp).toDate();
-    final dateStr = DateFormat('dd MMM yyyy', 'fr_FR').format(date);
-    final timeStr = DateFormat('HH:mm').format(date);
+    final dateStr = formatDate(date);
+    final timeStr = formatTime(date);
 
     Color statusColor;
     String statusText;
@@ -211,13 +198,7 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(15),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 2,
-            blurRadius: 8,
-          ),
-        ],
+        boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.1), spreadRadius: 2, blurRadius: 8)],
       ),
       child: Column(
         children: [
@@ -235,54 +216,28 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
                           radius: 25,
                           backgroundColor: const Color(0xFF03BE96).withOpacity(0.1),
                           child: Text(
-                            (data['patientName'] ?? 'P').substring(0, 1).toUpperCase(),
-                            style: GoogleFonts.inter(
-                              fontSize: 20. sp,
-                              fontWeight:  FontWeight.bold,
-                              color: const Color(0xFF03BE96),
-                            ),
+                            (data['patientName'] ??  'P').substring(0, 1).toUpperCase(),
+                            style: GoogleFonts.inter(fontSize: 20. sp, fontWeight: FontWeight. bold, color: const Color(0xFF03BE96)),
                           ),
                         ),
                         SizedBox(width: 3.w),
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              data['patientName'] ?? 'Patient',
-                              style: GoogleFonts.inter(
-                                fontSize: 16.sp,
-                                fontWeight: FontWeight. bold,
-                              ),
-                            ),
-                            Text(
-                              data['patientEmail'] ?? '',
-                              style: GoogleFonts.inter(
-                                fontSize: 13.sp,
-                                color: Colors.grey[600],
-                              ),
-                            ),
+                            Text(data['patientName'] ?? 'Patient', style: GoogleFonts. inter(fontSize: 16.sp, fontWeight: FontWeight.bold)),
+                            Text(data['patientEmail'] ?? '', style: GoogleFonts.inter(fontSize: 13.sp, color: Colors.grey[600])),
                           ],
                         ),
                       ],
                     ),
                     Container(
                       padding: EdgeInsets.symmetric(horizontal: 3.w, vertical: 1.h),
-                      decoration: BoxDecoration(
-                        color:  statusColor. withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
+                      decoration: BoxDecoration(color: statusColor.withOpacity(0.1), borderRadius: BorderRadius.circular(20)),
                       child: Row(
                         children: [
                           Icon(statusIcon, size: 16, color: statusColor),
                           SizedBox(width: 1.w),
-                          Text(
-                            statusText,
-                            style: GoogleFonts. inter(
-                              color: statusColor,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 12. sp,
-                            ),
-                          ),
+                          Text(statusText, style: GoogleFonts.inter(color: statusColor, fontWeight: FontWeight.w600, fontSize: 12. sp)),
                         ],
                       ),
                     ),
@@ -295,22 +250,17 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
                   children: [
                     Icon(Icons.calendar_today, size: 18, color: Colors.grey[600]),
                     SizedBox(width: 2.w),
-                    Text(
-                      dateStr,
-                      style: GoogleFonts. inter(
-                        fontSize: 14.sp,
-                        color: Colors.grey[700],
-                      ),
-                    ),
+                    Text(dateStr, style: GoogleFonts.inter(fontSize: 14.sp, color: Colors.grey[700])),
                     SizedBox(width: 4.w),
-                    Icon(Icons.access_time, size: 18, color: Colors.grey[600]),
+                    Icon(Icons.access_time, size: 18, color: Colors. grey[600]),
                     SizedBox(width: 2.w),
-                    Text(
-                      timeStr,
-                      style: GoogleFonts.inter(
-                        fontSize: 14.sp,
-                        color: Colors.grey[700],
-                      ),
+                    Text(timeStr, style: GoogleFonts.inter(fontSize: 14.sp, color: Colors.grey[700])),
+                    const Spacer(),
+                    // ✅ 2. Bouton modifier l'heure
+                    IconButton(
+                      icon: const Icon(Icons.edit, size: 20),
+                      color: const Color(0xFF03BE96),
+                      onPressed:  () => _showEditTimeDialog(data, docId),
                     ),
                   ],
                 ),
@@ -319,49 +269,15 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
                   children: [
                     Icon(Icons.medical_services, size: 18, color: Colors.grey[600]),
                     SizedBox(width: 2.w),
-                    Expanded(
-                      child: Text(
-                        data['reason'] ?? 'Consultation générale',
-                        style: GoogleFonts.inter(
-                          fontSize: 14.sp,
-                          color: Colors.grey[700],
-                        ),
-                      ),
-                    ),
+                    Expanded(child: Text(data['reason'] ?? 'Consultation générale', style: GoogleFonts.inter(fontSize: 14.sp, color: Colors.grey[700]))),
                   ],
                 ),
-                if (data['notes'] != null && data['notes']. toString().isNotEmpty) ...[
-                  SizedBox(height: 1.h),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Icon(Icons.note, size: 18, color:  Colors.grey[600]),
-                      SizedBox(width: 2.w),
-                      Expanded(
-                        child: Text(
-                          data['notes'],
-                          style: GoogleFonts.inter(
-                            fontSize: 13.sp,
-                            color: Colors.grey[600],
-                            fontStyle: FontStyle.italic,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
               ],
             ),
           ),
           if (status == 'pending') ...[
             Container(
-              decoration: BoxDecoration(
-                color: Colors.grey[50],
-                borderRadius:  const BorderRadius.only(
-                  bottomLeft: Radius.circular(15),
-                  bottomRight:  Radius.circular(15),
-                ),
-              ),
+              decoration: BoxDecoration(color: Colors.grey[50], borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(15), bottomRight: Radius.circular(15))),
               padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 2.h),
               child: Row(
                 children: [
@@ -369,16 +285,11 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
                     child: ElevatedButton. icon(
                       onPressed:  () => _updateAppointmentStatus(docId, 'confirmed'),
                       icon: const Icon(Icons.check, size: 18),
-                      label: Text(
-                        'Accepter',
-                        style: GoogleFonts.inter(fontWeight: FontWeight.w600),
-                      ),
+                      label: Text('Accepter', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF03BE96),
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
+                        foregroundColor: Colors. white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                         padding: EdgeInsets.symmetric(vertical: 1.5.h),
                       ),
                     ),
@@ -388,17 +299,12 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
                     child:  OutlinedButton.icon(
                       onPressed: () => _updateAppointmentStatus(docId, 'rejected'),
                       icon: const Icon(Icons.close, size: 18),
-                      label: Text(
-                        'Refuser',
-                        style: GoogleFonts.inter(fontWeight: FontWeight.w600),
-                      ),
-                      style: OutlinedButton. styleFrom(
+                      label: Text('Refuser', style: GoogleFonts. inter(fontWeight: FontWeight. w600)),
+                      style:  OutlinedButton.styleFrom(
                         foregroundColor: Colors.red,
                         side: const BorderSide(color: Colors. red),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        padding: EdgeInsets.symmetric(vertical: 1.5.h),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        padding:  EdgeInsets.symmetric(vertical: 1.5.h),
                       ),
                     ),
                   ),
@@ -407,44 +313,18 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
             ),
           ] else if (status == 'confirmed') ...[
             Container(
-              decoration: BoxDecoration(
-                color: Colors.grey[50],
-                borderRadius: const BorderRadius. only(
-                  bottomLeft:  Radius.circular(15),
-                  bottomRight: Radius. circular(15),
-                ),
-              ),
+              decoration: BoxDecoration(color: Colors.grey[50], borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(15), bottomRight: Radius.circular(15))),
               padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 2.h),
-              child: Row(
-                children: [
-                  Expanded(
-                    child:  ElevatedButton.icon(
-                      onPressed: () => _updateAppointmentStatus(docId, 'completed'),
-                      icon: const Icon(Icons.check_circle, size: 18),
-                      label: Text(
-                        'Marquer terminé',
-                        style: GoogleFonts.inter(fontWeight: FontWeight.w600),
-                      ),
-                      style:  ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        padding: EdgeInsets.symmetric(vertical: 1.5.h),
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: 2.w),
-                  IconButton(
-                    onPressed:  () {
-                      _showAppointmentDetails(data, docId);
-                    },
-                    icon: const Icon(Icons.edit),
-                    color: const Color(0xFF03BE96),
-                    iconSize: 28,
-                  ),
-                ],
+              child: ElevatedButton.icon(
+                onPressed: () => _updateAppointmentStatus(docId, 'completed'),
+                icon: const Icon(Icons.check_circle, size: 18),
+                label: Text('Marquer terminé', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius:  BorderRadius.circular(10)),
+                  padding: EdgeInsets. symmetric(vertical: 1.5.h),
+                ),
               ),
             ),
           ],
@@ -453,145 +333,8 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
     );
   }
 
-  // ✅ Show appointment details with option to edit
-  void _showAppointmentDetails(Map<String, dynamic> data, String docId) {
-    showModalBottomSheet(
-      context:  context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.7,
-        minChildSize: 0.5,
-        maxChildSize: 0.95,
-        expand: false,
-        builder: (context, scrollController) {
-          final date = (data['date'] as Timestamp).toDate();
-          return SingleChildScrollView(
-            controller:  scrollController,
-            child:  Padding(
-              padding: EdgeInsets.all(5.w),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: Container(
-                      width: 50,
-                      height: 5,
-                      decoration: BoxDecoration(
-                        color: Colors.grey[300],
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: 3.h),
-                  Text(
-                    'Détails du rendez-vous',
-                    style: GoogleFonts.inter(
-                      fontSize: 22.sp,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  SizedBox(height: 3.h),
-                  _buildDetailRow(Icons.person, 'Patient', data['patientName'] ?? ''),
-                  _buildDetailRow(Icons.email, 'Email', data['patientEmail'] ??  ''),
-                  _buildDetailRow(
-                    Icons.calendar_today,
-                    'Date',
-                    DateFormat('dd MMMM yyyy', 'fr_FR').format(date),
-                  ),
-                  _buildDetailRow(
-                    Icons. access_time,
-                    'Heure',
-                    DateFormat('HH:mm').format(date),
-                  ),
-                  _buildDetailRow(
-                    Icons.medical_services,
-                    'Motif',
-                    data['reason'] ?? 'Consultation',
-                  ),
-                  if (data['notes'] != null && data['notes'].toString().isNotEmpty)
-                    _buildDetailRow(Icons.note, 'Notes', data['notes']),
-                  SizedBox(height: 3.h),
-                  SizedBox(
-                    width:  double.infinity,
-                    child: ElevatedButton. icon(
-                      onPressed:  () {
-                        Navigator.pop(context);
-                        _showRescheduleDialog(data, docId);
-                      },
-                      icon: const Icon(Icons.edit_calendar),
-                      label: Text(
-                        'Reprogrammer',
-                        style:  GoogleFonts.inter(
-                          fontWeight: FontWeight. w600,
-                          fontSize: 16.sp,
-                        ),
-                      ),
-                      style: ElevatedButton. styleFrom(
-                        backgroundColor:  const Color(0xFF03BE96),
-                        foregroundColor:  Colors.white,
-                        padding: EdgeInsets.symmetric(vertical: 2.h),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildDetailRow(IconData icon, String label, String value) {
-    return Padding(
-      padding: EdgeInsets.only(bottom: 2.h),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: EdgeInsets.all(2.w),
-            decoration: BoxDecoration(
-              color: const Color(0xFF03BE96).withOpacity(0.1),
-              borderRadius: BorderRadius. circular(10),
-            ),
-            child: Icon(icon, color: const Color(0xFF03BE96), size: 20),
-          ),
-          SizedBox(width: 3.w),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: GoogleFonts. inter(
-                    fontSize: 13.sp,
-                    color: Colors.grey[600],
-                  ),
-                ),
-                SizedBox(height: 0.5.h),
-                Text(
-                  value,
-                  style: GoogleFonts. inter(
-                    fontSize: 15.sp,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ✅ Reschedule appointment dialog
-  void _showRescheduleDialog(Map<String, dynamic> data, String docId) {
+  // ✅ 2. Modifier l'heure
+  void _showEditTimeDialog(Map<String, dynamic> data, String docId) {
     final currentDate = (data['date'] as Timestamp).toDate();
     DateTime selectedDate = currentDate;
     TimeOfDay selectedTime = TimeOfDay.fromDateTime(currentDate);
@@ -599,54 +342,28 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(
-          'Reprogrammer le rendez-vous',
-          style: GoogleFonts.inter(fontWeight: FontWeight.bold),
-        ),
+        title: Text('Modifier l\'heure', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
         content: StatefulBuilder(
           builder: (context, setDialogState) {
             return Column(
-              mainAxisSize:  MainAxisSize.min,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 ListTile(
                   leading: const Icon(Icons.calendar_today),
-                  title: Text(
-                    DateFormat('dd MMMM yyyy', 'fr_FR').format(selectedDate),
-                    style: GoogleFonts.inter(),
-                  ),
+                  title: Text(formatDateFull(selectedDate)),
                   trailing: const Icon(Icons.edit),
                   onTap:  () async {
-                    final picked = await showDatePicker(
-                      context:  context,
-                      initialDate:  selectedDate,
-                      firstDate: DateTime. now(),
-                      lastDate:  DateTime. now().add(const Duration(days: 365)),
-                      locale: const Locale('fr', 'FR'),
-                    );
-                    if (picked != null) {
-                      setDialogState(() {
-                        selectedDate = picked;
-                      });
-                    }
+                    final picked = await showDatePicker(context: context, initialDate: selectedDate, firstDate: DateTime.now(), lastDate: DateTime. now().add(const Duration(days: 365)));
+                    if (picked != null) setDialogState(() => selectedDate = picked);
                   },
                 ),
                 ListTile(
                   leading: const Icon(Icons.access_time),
-                  title: Text(
-                    selectedTime.format(context),
-                    style: GoogleFonts.inter(),
-                  ),
-                  trailing: const Icon(Icons.edit),
-                  onTap: () async {
-                    final picked = await showTimePicker(
-                      context: context,
-                      initialTime: selectedTime,
-                    );
-                    if (picked != null) {
-                      setDialogState(() {
-                        selectedTime = picked;
-                      });
-                    }
+                  title: Text(selectedTime.format(context)),
+                  trailing: const Icon(Icons. edit),
+                  onTap:  () async {
+                    final picked = await showTimePicker(context: context, initialTime: selectedTime);
+                    if (picked != null) setDialogState(() => selectedTime = picked);
                   },
                 ),
               ],
@@ -654,120 +371,169 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
           },
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              'Annuler',
-              style: GoogleFonts. inter(color: Colors.grey),
-            ),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context), child: Text('Annuler', style: GoogleFonts.inter(color: Colors.grey))),
           ElevatedButton(
             onPressed: () async {
-              final newDate = DateTime(
-                selectedDate.year,
-                selectedDate.month,
-                selectedDate.day,
-                selectedTime.hour,
-                selectedTime.minute,
-              );
-              
-              await _rescheduleAppointment(docId, newDate);
+              final newDate = DateTime(selectedDate.year, selectedDate.month, selectedDate.day, selectedTime.hour, selectedTime. minute);
+              await _updateAppointmentTime(docId, newDate);
               if (mounted) Navigator.pop(context);
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF03BE96),
-            ),
-            child: Text(
-              'Confirmer',
-              style: GoogleFonts.inter(color: Colors.white),
-            ),
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF03BE96)),
+            child: Text('Confirmer', style: GoogleFonts.inter(color: Colors.white)),
           ),
         ],
       ),
     );
   }
 
-  Future<void> _rescheduleAppointment(String docId, DateTime newDate) async {
+  Future<void> _updateAppointmentTime(String docId, DateTime newDate) async {
     try {
-      await FirebaseFirestore.instance
-          . collection('appointments')
-          .doc(docId)
-          .update({
-        'date':  Timestamp.fromDate(newDate),
+      await FirebaseFirestore.instance.collection('appointments').doc(docId).update({'date':  Timestamp.fromDate(newDate), 'updatedAt': FieldValue.serverTimestamp()});
+      if (mounted) {
+        ScaffoldMessenger. of(context).showSnackBar(const SnackBar(content: Text('Heure modifiée avec succès'), backgroundColor: Colors.green));
+        setState(() {});
+      }
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur:  ${e.toString()}'), backgroundColor: Colors.red));
+    }
+  }
+
+  // ✅ 3. Créer un rendez-vous avec un patient existant
+  void _showCreateAppointmentDialog() {
+    String? selectedPatientId;
+    String selectedPatientName = '';
+    String selectedPatientEmail = '';
+    final reasonCtrl = TextEditingController();
+    final notesCtrl = TextEditingController();
+
+    DateTime selectedDate = DateTime.now().add(const Duration(days: 1));
+    TimeOfDay selectedTime = const TimeOfDay(hour: 9, minute: 0);
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title:  Text('Nouveau rendez-vous', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
+        content: StatefulBuilder(
+          builder: (context, setDialogState) {
+            return SingleChildScrollView(
+              child:  Column(
+                mainAxisSize:  MainAxisSize.min,
+                children: [
+                  // Sélection patient
+                  StreamBuilder<QuerySnapshot>(
+                    stream: FirebaseFirestore.instance.collection('users').where('role', isEqualTo: 'patient').snapshots(),
+                    builder: (context, snapshot) {
+                      if (! snapshot.hasData) return const CircularProgressIndicator();
+
+                      List<DropdownMenuItem<String>> patientItems = snapshot.data!.docs.map((doc) {
+                        final data = doc.data() as Map<String, dynamic>;
+                        return DropdownMenuItem<String>(value: doc.id, child: Text(data['name'] ?? 'Patient'));
+                      }).toList();
+
+                      return DropdownButtonFormField<String>(
+                        decoration: const InputDecoration(labelText: 'Sélectionner un patient', border: OutlineInputBorder(), prefixIcon: Icon(Icons. person)),
+                        value: selectedPatientId,
+                        items: patientItems,
+                        onChanged: (value) {
+                          final selectedDoc = snapshot.data!.docs. firstWhere((doc) => doc.id == value);
+                          final data = selectedDoc.data() as Map<String, dynamic>;
+                          setDialogState(() {
+                            selectedPatientId = value;
+                            selectedPatientName = data['name'] ?? '';
+                            selectedPatientEmail = data['email'] ?? '';
+                          });
+                        },
+                      );
+                    },
+                  ),
+                  SizedBox(height:  2.h),
+                  ListTile(
+                    leading:  const Icon(Icons.calendar_today),
+                    title:  Text(formatDateFull(selectedDate)),
+                    trailing: const Icon(Icons.edit),
+                    onTap:  () async {
+                      final picked = await showDatePicker(context: context, initialDate: selectedDate, firstDate: DateTime.now(), lastDate: DateTime.now().add(const Duration(days: 365)));
+                      if (picked != null) setDialogState(() => selectedDate = picked);
+                    },
+                  ),
+                  ListTile(
+                    leading:  const Icon(Icons.access_time),
+                    title: Text(selectedTime.format(context)),
+                    trailing: const Icon(Icons.edit),
+                    onTap: () async {
+                      final picked = await showTimePicker(context: context, initialTime:  selectedTime);
+                      if (picked != null) setDialogState(() => selectedTime = picked);
+                    },
+                  ),
+                  SizedBox(height:  2.h),
+                  TextField(controller: reasonCtrl, decoration: const InputDecoration(labelText: 'Motif', border: OutlineInputBorder(), prefixIcon: Icon(Icons. medical_services))),
+                  SizedBox(height: 2.h),
+                  TextField(controller: notesCtrl, maxLines: 3, decoration: const InputDecoration(labelText: 'Notes (optionnel)', border: OutlineInputBorder(), prefixIcon: Icon(Icons.note))),
+                ],
+              ),
+            );
+          },
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: Text('Annuler', style: GoogleFonts.inter(color: Colors.grey))),
+          ElevatedButton(
+            onPressed: () async {
+              if (selectedPatientId == null || reasonCtrl.text.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Veuillez remplir tous les champs'), backgroundColor: Colors.red));
+                return;
+              }
+
+              final appointmentDate = DateTime(selectedDate.year, selectedDate.month, selectedDate. day, selectedTime.hour, selectedTime.minute);
+              await _createAppointment(selectedPatientId!, selectedPatientName, selectedPatientEmail, appointmentDate, reasonCtrl.text, notesCtrl.text);
+              if (mounted) Navigator.pop(context);
+            },
+            style: ElevatedButton. styleFrom(backgroundColor: const Color(0xFF03BE96)),
+            child: Text('Créer', style: GoogleFonts.inter(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _createAppointment(String patientId, String patientName, String patientEmail, DateTime date, String reason, String notes) async {
+    try {
+      final doctorDoc = await FirebaseFirestore.instance.collection('users').doc(user?. uid).get();
+      final doctorName = doctorDoc.data()?['name'] ?? 'Doctor';
+
+      await FirebaseFirestore.instance.collection('appointments').add({
+        'doctorId': user?.uid,
+        'doctorName': 'Dr. $doctorName',
+        'patientId': patientId,
+        'patientName': patientName,
+        'patientEmail': patientEmail,
+        'date': Timestamp.fromDate(date),
+        'reason': reason,
+        'notes': notes,
+        'status': 'confirmed',
+        'createdAt':  FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Rendez-vous reprogrammé avec succès'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        setState(() {}); // Refresh the list
+        ScaffoldMessenger. of(context).showSnackBar(const SnackBar(content: Text('Rendez-vous créé! '), backgroundColor: Colors.green));
+        setState(() {});
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur:  ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur:  ${e.toString()}'), backgroundColor: Colors.red));
     }
   }
 
   Future<void> _updateAppointmentStatus(String docId, String newStatus) async {
     try {
-      await FirebaseFirestore. instance
-          .collection('appointments')
-          .doc(docId)
-          .update({
-        'status': newStatus,
-        'updatedAt': FieldValue. serverTimestamp(),
-      });
+      await FirebaseFirestore. instance.collection('appointments').doc(docId).update({'status': newStatus, 'updatedAt':  FieldValue.serverTimestamp()});
 
       if (mounted) {
-        String message;
-        Color bgColor;
-
-        switch (newStatus) {
-          case 'confirmed':
-            message = 'Rendez-vous accepté avec succès';
-            bgColor = Colors.green;
-            break;
-          case 'rejected':
-            message = 'Rendez-vous refusé';
-            bgColor = Colors.red;
-            break;
-          case 'completed':
-            message = 'Rendez-vous marqué comme terminé';
-            bgColor = Colors.green;
-            break;
-          default:
-            message = 'Statut mis à jour';
-            bgColor = Colors.blue;
-        }
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content:  Text(message),
-            backgroundColor:  bgColor,
-          ),
-        );
-        
-        setState(() {}); // Refresh the list
+        String message = newStatus == 'confirmed' ?  'Rendez-vous accepté' : newStatus == 'rejected' ? 'Rendez-vous refusé' : 'Rendez-vous terminé';
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message), backgroundColor: Colors.green));
+        setState(() {});
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content:  Text('Erreur: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:  Text('Erreur: ${e.toString()}'), backgroundColor: Colors. red));
     }
   }
 }
