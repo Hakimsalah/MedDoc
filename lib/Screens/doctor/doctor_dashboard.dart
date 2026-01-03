@@ -4,6 +4,12 @@ import 'package:responsive_sizer/responsive_sizer.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'add_medical_record_screen.dart';
+import 'medical_records_screen.dart';
+import 'doctor_stats_screen.dart';
+
+
+
 
 class DoctorDashboard extends StatefulWidget {
   const DoctorDashboard({super.key});
@@ -227,6 +233,36 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
                       'Paramètres',
                       Colors.blueGrey,
                     ),
+                    _buildQuickAction(
+                      FontAwesomeIcons.folderOpen,
+                      'Dossiers\nPatients',
+                      Colors.teal,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const MedicalRecordsScreen(),
+                          ),
+                  
+
+                    
+
+                        );
+                      },
+                    ),
+                    _buildQuickAction(
+                    FontAwesomeIcons.chartLine,
+                    'Statistiques',
+                    Colors.purple,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => DoctorStatsScreen()),
+                      );
+                    },
+                  ),
+
+
                   ],
                 ),
 
@@ -313,32 +349,38 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
     );
   }
 
-  Widget _buildQuickAction(IconData icon, String label, Color color) {
-    return GestureDetector(
-      onTap: () {},
-      child: Column(
-        children: [
-          Container(
-            padding: EdgeInsets.all(4.w),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(15),
-            ),
-            child:  FaIcon(icon, color: color, size: 22.sp),
+  Widget _buildQuickAction(
+  IconData icon,
+  String label,
+  Color color, {
+  VoidCallback? onTap, // ✅ add this
+}) {
+  return GestureDetector(
+    onTap: onTap ?? () {}, // call it if provided
+    child: Column(
+      children: [
+        Container(
+          padding: EdgeInsets.all(4.w),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(15),
           ),
-          SizedBox(height: 1.h),
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            style: GoogleFonts. inter(
-              fontSize: 12.sp,
-              color: Colors.grey[700],
-            ),
+          child: FaIcon(icon, color: color, size: 22.sp),
+        ),
+        SizedBox(height: 1.h),
+        Text(
+          label,
+          textAlign: TextAlign.center,
+          style: GoogleFonts.inter(
+            fontSize: 12.sp,
+            color: Colors.grey[700],
           ),
-        ],
-      ),
-    );
-  }
+        ),
+      ],
+    ),
+  );
+}
+
 
   // ✅ FIXED: Use FutureBuilder instead of StreamBuilder
   Widget _buildTodayAppointments() {

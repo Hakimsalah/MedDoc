@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'screens/auth/login.dart';
+import 'Screens/Auth/login.dart';
 import 'package:responsive_sizer/responsive_sizer.dart';
 
 Future<void> main() async {

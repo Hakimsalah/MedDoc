@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:responsive_sizer/responsive_sizer.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../auth/login.dart';
+import '../Auth/login.dart';
 
 // ✅ CORRECT CLASS NAME
 class DoctorProfileScreen extends StatefulWidget {

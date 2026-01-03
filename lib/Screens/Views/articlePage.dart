@@ -1,5 +1,5 @@
 import 'package:emart_app/Screens/Widgets/article.dart';
-import 'package:emart_app/screens/patient/patient_home.dart';
+import 'package:emart_app/Screens/patient/patient_home.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:page_transition/page_transition.dart';

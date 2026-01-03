@@ -10,6 +10,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  fl_chart: ^0.69.0
+ 
 
   cupertino_icons: ^1.0.6
   velocity_x:
@@ -24,7 +26,7 @@ dependencies:
   google_sign_in: ^6.2.1
   flutter_facebook_auth: ^7.0.0
   sign_in_with_apple: ^4.2.0
-  flutter_chat_ui: ^2.11.1
+  flutter_chat_ui: ^1.6.15
   flutter_chat_types: ^3.6.2
   animated_bottom_navigation_bar: ^1.4.0
   font_awesome_flutter: ^10.12.0
