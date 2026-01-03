@@ -1,20 +1,27 @@
-import 'package:emart_app/Screens/Views/articlePage.dart';
-import 'package:emart_app/Screens/Views/doctor_search.dart';
-import 'package:emart_app/Screens/Views/find_doctor.dart';
+import 'package:badges/badges.dart' as badges;
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:emart_app/Screens/Views/meet_notifications_screen.dart';
+import 'package:emart_app/Screens/Widgets/ListDoctorCard.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:page_transition/page_transition.dart';
 import 'package:responsive_sizer/responsive_sizer.dart';
-import '../Widgets/list_doctor1.dart';
-import '../Widgets/article.dart';
-import 'package:emart_app/Screens/Widgets/safe_asset_image.dart';
 
+import '../../data/doctors_mock.dart';
+import '../Widgets/safe_asset_image.dart';
+import '../Widgets/article.dart';
+import 'doctor_search.dart';
+import 'doctor_details_screen.dart';
+import 'articlePage.dart';
 
 class Dashboard extends StatelessWidget {
   const Dashboard({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final doctors = doctorsMock;
+
     return Scaffold(
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
@@ -30,69 +37,81 @@ class Dashboard extends StatelessWidget {
           ),
         ),
         actions: [
-          IconButton(
-            icon: SafeAssetImage("assets/icons/bell.png", width: 4.h, height: 4.h, fit: BoxFit.contain),
-            onPressed: () {},
-          ),
-          IconButton(
-            icon: const Icon(Icons.person, color: Colors.black87),
-            onPressed: () {},
+          StreamBuilder<QuerySnapshot>(
+            stream: FirebaseFirestore.instance
+                .collection('appointments')
+                .where('patientId', isEqualTo: FirebaseAuth.instance.currentUser!.uid)
+                .where('status', isEqualTo: 'confirmed')
+                .snapshots(),
+            builder: (context, snapshot) {
+              int notificationCount = 0;
+              if (snapshot.hasData) {
+                final now = DateTime.now();
+                notificationCount = snapshot.data!.docs.where((doc) {
+                  final date = (doc['date'] as Timestamp).toDate();
+                  return date.isAfter(now);
+                }).length;
+              }
+
+              return IconButton(
+                icon: badges.Badge(
+                  badgeContent: Text(
+                    notificationCount.toString(),
+                    style: const TextStyle(color: Colors.white, fontSize: 10),
+                  ),
+                  showBadge: notificationCount > 0,
+                  child: SafeAssetImage(
+                    "assets/icons/bell.png",
+                    width: 24,
+                    height: 24,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const MeetNotificationsScreen(),
+                    ),
+                  );
+                },
+              );
+            },
           ),
         ],
       ),
       backgroundColor: Colors.white,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: EdgeInsets.symmetric(horizontal: 5.w, vertical: 2.h)
-              .copyWith(bottom: MediaQuery.of(context).viewInsets.bottom + 2.h),
-          child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+      body: SingleChildScrollView(
+        padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 2.h),
+        child: Column(
           children: [
-            // Search bar
-            TextField(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  PageTransition(
-                    type: PageTransitionType.rightToLeft,
-                    child: const find_doctor(),
+            // Search Bar
+            Container(
+              height: 6.h,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: const Color.fromARGB(255, 247, 247, 247),
+                borderRadius: BorderRadius.circular(30),
+              ),
+              child: TextField(
+                textAlignVertical: TextAlignVertical.center,
+                keyboardType: TextInputType.text,
+                decoration: InputDecoration(
+                  prefixIcon: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: SafeAssetImage(
+                      "assets/icons/search.png",
+                      width: 24,
+                      height: 24,
+                      fit: BoxFit.contain,
+                    ),
                   ),
-                );
-              },
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: Colors.grey[200],
-                prefixIcon:
-                    const Icon(Icons.search, color: Color(0xFF03BE96)),
-                hintText: "Search doctor, drugs, articles...",
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
+                  prefixIconColor: const Color(0xFF03BE96),
+                  hintText: "Search doctor, drugs, articles...",
+                  border: InputBorder.none,
                 ),
               ),
             ),
-
-            SizedBox(height: 3.h),
-
-            // Quick actions
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _quickAction(
-                    icon: "assets/icons/Doctor.png",
-                    text: "Book Appointment",
-                    onTap: () {}),
-                _quickAction(
-                    icon: "assets/icons/document.png",
-                    text: "My Documents",
-                    onTap: () {}),
-                _quickAction(
-                    icon: "assets/icons/video.png",
-                    text: "Virtual Consult",
-                    onTap: () {}),
-              ],
-            ),
-
             SizedBox(height: 3.h),
 
             // Top Doctors
@@ -110,7 +129,7 @@ class Dashboard extends StatelessWidget {
                       context,
                       PageTransition(
                         type: PageTransitionType.rightToLeft,
-                        child: const doctor_search(),
+                        child: const DoctorSearch(specialty: "All"),
                       ),
                     );
                   },
@@ -122,26 +141,32 @@ class Dashboard extends StatelessWidget {
                 ),
               ],
             ),
-
             SizedBox(height: 2.h),
 
             SizedBox(
-              height: 24.h,
-              child: ListView(
-                shrinkWrap: true,
-                physics: const ClampingScrollPhysics(),
+              height: 28.h,
+              child: ListView.builder(
                 scrollDirection: Axis.horizontal,
-                children: [
-                  list_doctor1(
-                      distance: "130m Away",
-                      image: "assets/icons/male-doctor.png",
-                      maintext: "Dr. Marcus Horizon",
-                      numRating: "4.7",
-                      subtext: "Cardiologist"),
-                ],
+                shrinkWrap: true,
+                physics: const BouncingScrollPhysics(),
+                itemCount: doctors.length,
+                itemBuilder: (context, index) {
+                  final doc = doctors[index];
+                  return ListDoctorCard(
+                    doctor: doc,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        PageTransition(
+                          type: PageTransitionType.rightToLeft,
+                          child: DoctorDetails(doctor: doc),
+                        ),
+                      );
+                    },
+                  );
+                },
               ),
             ),
-
             SizedBox(height: 3.h),
 
             // Articles
@@ -171,6 +196,7 @@ class Dashboard extends StatelessWidget {
                 ),
               ],
             ),
+            SizedBox(height: 2.h),
 
             article(
               image: "assets/images/article1.png",
@@ -179,10 +205,20 @@ class Dashboard extends StatelessWidget {
               mainText:
                   "The 25 Healthiest Fruits You Can Eat, According to a Nutritionist",
             ),
+            SizedBox(height: 2.h), // un petit espace entre les articles
+
+// Deuxième article
+article(
+  image: "assets/images/capsules2.png",
+  dateText: "Jun 10, 2020",
+  duration: "5min read",
+  mainText:
+      "Comparing the AstraZeneca and Sinovac COVID-19 Vaccines",
+),
           ],
         ),
       ),
-    ));
+    );
   }
 
   Widget _quickAction({
@@ -202,18 +238,18 @@ class Dashboard extends StatelessWidget {
               borderRadius: BorderRadius.circular(15),
             ),
             padding: const EdgeInsets.all(10),
-                  child: SafeAssetImage(
-                    icon,
-                    width: 14.w,
-                    height: 7.h,
-                    fit: BoxFit.contain,
-                  ),
+            child: SafeAssetImage(
+              icon,
+              width: 14.w,
+              height: 7.h,
+              fit: BoxFit.contain,
+            ),
           ),
           SizedBox(height: 1.h),
           Text(
             text,
-            style: GoogleFonts.inter(
-                fontSize: 14.sp, fontWeight: FontWeight.w500),
+            style:
+                GoogleFonts.inter(fontSize: 14.sp, fontWeight: FontWeight.w500),
           )
         ],
       ),

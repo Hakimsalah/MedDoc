@@ -28,7 +28,7 @@ class articlePage extends StatelessWidget {
           icon: Container(
               height: 4.h,
               width: 4.h,
-              child: SafeAssetImage("assets/icons/back2.png", width: 4.h, height: 4.h)),
+              child: SafeAssetImage("assets/icons/back2.png", width: 1.h, height: 1.h)),
           onPressed: () {
             Navigator.pushReplacement(
                 context,
@@ -36,12 +36,6 @@ class articlePage extends StatelessWidget {
                     type: PageTransitionType.fade, child: PatientHome()));
           },
         ),
-        actions: [
-          Container(
-              height: 4.h,
-              width: 4.h,
-              child: SafeAssetImage("assets/icons/more.png", width: 4.h, height: 4.h)),
-        ],
       ),
       backgroundColor: Colors.white,
       body: SingleChildScrollView(

@@ -1,6 +1,6 @@
+import 'package:emart_app/Screens/Auth/login_signup.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'screens/auth/login.dart';
 import 'package:responsive_sizer/responsive_sizer.dart';
 
 Future<void> main() async {
@@ -32,7 +32,7 @@ class MedDocApp extends StatelessWidget {
         return MaterialApp(
           debugShowCheckedModeBanner: false,
           title: 'MedDoc',
-          home: const Login(),
+          home: const login_signup(),
         );
       },
     );

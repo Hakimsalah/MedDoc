@@ -1,101 +1,66 @@
-import 'package:emart_app/Screens/Views/doctor_details_screen.dart';
-import 'package:emart_app/Screens/Widgets/doctorList.dart';
-import 'package:emart_app/screens/patient/patient_home.dart';
+import 'package:emart_app/Screens/Widgets/ListDoctorCard.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:page_transition/page_transition.dart';
 import 'package:responsive_sizer/responsive_sizer.dart';
+import '../../Models/doctor.dart';
 
-class doctor_search extends StatelessWidget {
-  const doctor_search({super.key});
+import 'doctor_details_screen.dart';
+import 'package:page_transition/page_transition.dart';
+import '../../data/doctors_mock.dart';
+
+class DoctorSearch extends StatelessWidget {
+  final String specialty;
+
+  const DoctorSearch({Key? key, required this.specialty}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    // Filtrer les docteurs selon la spécialité
+    final doctors = specialty == "All"
+        ? doctorsMock
+        : doctorsMock.where((d) => d.specialty == specialty).toList();
+
     return Scaffold(
-      backgroundColor: Colors.white,
       appBar: AppBar(
-        leading: GestureDetector(
-          onTap: () {
-            Navigator.pushReplacement(
-                context,
-                PageTransition(
-                    type: PageTransitionType.fade, child: PatientHome()));
-          },
-          child: Container(
-            height: 10,
-            width: 10,
-            decoration: const BoxDecoration(
-                image: DecorationImage(
-              image: AssetImage("assets/icons/back1.png"),
-            )),
-          ),
-        ),
-        title: Text(
-          "Top Doctors",
-          style: GoogleFonts.poppins(color: Colors.black, fontSize: 18.sp),
-        ),
-        centerTitle: true,
-        elevation: 0,
-        toolbarHeight: 100,
-        actions: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Container(
-              height: 10,
-              width: 10,
-              decoration: const BoxDecoration(
-                  image: DecorationImage(
-                image: AssetImage("assets/icons/more.png"),
-              )),
-            ),
-          ),
-        ],
         backgroundColor: Colors.white,
+        elevation: 0,
+        title: const Text(
+          "Doctors",
+          style: TextStyle(color: Colors.black87),
+        ),
+        iconTheme: const IconThemeData(color: Colors.black87),
       ),
+      backgroundColor: Colors.white,
       body: SafeArea(
-          child: Column(
-        children: [
-          GestureDetector(
-            onTap: () {
-              Navigator.push(
-                  context,
-                  PageTransition(
-                      type: PageTransitionType.rightToLeft,
-                      child: DoctorDetails()));
-            },
-            child: doctorList(
-                distance: "800m Away",
-                image: "assets/icons/male-doctor.png",
-                maintext: "Dr. Marcus Horizon",
-                numRating: "4.7",
-                subtext: "Chardiologist"),
-          ),
-          doctorList(
-              distance: "800m Away",
-              image: "assets/icons/docto3.png",
-              maintext: "Dr. Marcus Horizon",
-              numRating: "4.7",
-              subtext: "Chardiologist"),
-          doctorList(
-              distance: "800m Away",
-              image: "assets/icons/doctor2.png",
-              maintext: "Dr. Marcus Horizon",
-              numRating: "4.7",
-              subtext: "Chardiologist"),
-          doctorList(
-              distance: "800m Away",
-              image: "assets/icons/black-doctor.png",
-              maintext: "Dr. Marcus Horizon",
-              numRating: "4.7",
-              subtext: "Chardiologist"),
-          doctorList(
-              distance: "800m Away",
-              image: "assets/icons/male-doctor.png",
-              maintext: "Dr. Marcus Horizon",
-              numRating: "4.7",
-              subtext: "Chardiologist"),
-        ],
-      )),
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 5.w, vertical: 2.h),
+          child: doctors.isEmpty
+              ? const Center(child: Text("No doctors found"))
+              : GridView.builder(
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 2.w,
+                    mainAxisSpacing: 1.h,
+                    childAspectRatio: 1.15, // pour éviter overflow
+                  ),
+                  itemCount: doctors.length,
+                  itemBuilder: (context, index) {
+                    final doc = doctors[index];
+                    return ListDoctorCard(
+                      doctor: doc,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          PageTransition(
+                            type: PageTransitionType.rightToLeft,
+                            child: DoctorDetails(doctor: doc),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
+        ),
+      ),
     );
   }
 }

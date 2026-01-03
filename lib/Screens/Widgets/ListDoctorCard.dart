@@ -1,26 +1,21 @@
-import 'package:emart_app/Models/doctor.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:responsive_sizer/responsive_sizer.dart';
-import '../../data/doctors_mock.dart'; // ton modèle Doctor
+import '../../Models/doctor.dart';
 
-class list_doctor1 extends StatelessWidget {
-  final Doctor doctor; // le modèle complet
+class ListDoctorCard extends StatelessWidget {
+  final Doctor doctor;
   final VoidCallback onTap;
 
-  const list_doctor1({
-    Key? key,
-    required this.doctor,
-    required this.onTap,
-  }) : super(key: key);
+  const ListDoctorCard({Key? key, required this.doctor, required this.onTap}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 40.w, // largeur fixe pour le ListView horizontal
-        margin: EdgeInsets.symmetric(horizontal: 2.w),
+        width: 40.w, // responsive width
+        margin: EdgeInsets.symmetric(horizontal: 2.w, vertical: 1.h),
         padding: EdgeInsets.all(2.w),
         decoration: BoxDecoration(
           color: Colors.white,
@@ -30,22 +25,29 @@ class list_doctor1 extends StatelessWidget {
             BoxShadow(
               color: Colors.grey.shade200,
               blurRadius: 5,
-              offset: Offset(0, 2),
+              offset: const Offset(0, 2),
             ),
           ],
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Image ronde du docteur
-            Container(
-              width: 20.w,
-              height: 20.w,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                image: DecorationImage(
-                  image: AssetImage(doctor.image),
+            // Image ronde avec taille responsive et clip pour éviter overflow
+            ClipRRect(
+              borderRadius: BorderRadius.circular(50),
+              child: SizedBox(
+                width: 18.w,
+                height: 18.w,
+                child: Image.asset(
+                  doctor.image,
                   fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    // Si l'image n'existe pas
+                    return Container(
+                      color: Colors.grey.shade200,
+                      child: const Icon(Icons.person, size: 40, color: Colors.grey),
+                    );
+                  },
                 ),
               ),
             ),
@@ -57,7 +59,7 @@ class list_doctor1 extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: GoogleFonts.poppins(
-                fontSize: 14.sp,
+                fontSize: 13.sp,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -69,17 +71,17 @@ class list_doctor1 extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: GoogleFonts.poppins(
-                fontSize: 11.sp,
-                color: Colors.black45,
+                fontSize: 10.sp,
+                color: Colors.black54,
                 fontWeight: FontWeight.w500,
               ),
             ),
             SizedBox(height: 1.h),
 
-            // Évaluation + Distance
+            // Évaluation et localisation
             Row(
+              mainAxisAlignment: MainAxisAlignment.start,
               children: [
-                // Étoiles + Note
                 Container(
                   padding: EdgeInsets.symmetric(horizontal: 2.w, vertical: 0.5.h),
                   decoration: BoxDecoration(
@@ -88,27 +90,21 @@ class list_doctor1 extends StatelessWidget {
                   ),
                   child: Row(
                     children: [
-                      Image.asset(
-                        "assets/icons/star.png",
-                        width: 4.w,
-                        height: 2.5.h,
-                      ),
+                      Icon(Icons.star, color: Colors.amber, size: 16.sp),
                       SizedBox(width: 1.w),
                       Text(
                         doctor.rating.toString(),
                         style: GoogleFonts.poppins(
-                          fontSize: 11.sp,
-                          color: Color(0xFF04B378),
+                          fontSize: 10.sp,
                           fontWeight: FontWeight.bold,
+                          color: Colors.green,
                         ),
                       ),
                     ],
                   ),
                 ),
                 SizedBox(width: 2.w),
-
-                // Icône de localisation + distance
-                Icon(Icons.location_on, size: 16.sp, color: Colors.grey),
+                Icon(Icons.location_on, size: 14.sp, color: Colors.grey),
                 SizedBox(width: 0.5.w),
                 Expanded(
                   child: Text(
@@ -116,7 +112,7 @@ class list_doctor1 extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.poppins(
-                      fontSize: 11.sp,
+                      fontSize: 10.sp,
                       color: Colors.grey.shade700,
                       fontWeight: FontWeight.w500,
                     ),

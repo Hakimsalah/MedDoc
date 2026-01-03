@@ -1,254 +1,267 @@
-import 'package:emart_app/Screens/Widgets/profile_list.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:responsive_sizer/responsive_sizer.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../auth/login.dart';
 
-class Profile_screen extends StatelessWidget {
-  const Profile_screen({super.key});
+class PatientProfileScreen extends StatefulWidget {
+  const PatientProfileScreen({super.key});
+
+  @override
+  State<PatientProfileScreen> createState() => _PatientProfileScreenState();
+}
+
+class _PatientProfileScreenState extends State<PatientProfileScreen> {
+  final user = FirebaseAuth.instance.currentUser;
+  Map<String, dynamic> patientData = {};
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    loadPatientData();
+  }
+
+  Future<void> loadPatientData() async {
+    if (user == null) return;
+
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user!.uid)
+          .get();
+
+      if (doc.exists && doc.data()?['role'] == 'patient') {
+        setState(() {
+          patientData = doc.data()!;
+          isLoading = false;
+        });
+      } else {
+        isLoading = false;
+      }
+    } catch (e) {
+      isLoading = false;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final fullName =
+        "${patientData['firstName'] ?? ''} ${patientData['lastName'] ?? ''}";
+
     return Scaffold(
-      backgroundColor: Color.fromARGB(255, 3, 226, 215),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            SizedBox(
-              height: 50,
-            ),
-            Center(
-              child: Stack(
+      backgroundColor: Colors.grey[50],
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF03BE96),
+        title: Text(
+          'Mon Profil',
+          style: GoogleFonts.inter(
+              fontSize: 20.sp, fontWeight: FontWeight.bold),
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.edit),
+            onPressed: _showEditDialog,
+          )
+        ],
+      ),
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              child: Column(
                 children: [
-                  SizedBox(
-                    height: 50,
-                  ),
+                  // HEADER
                   Container(
-                    width: 110,
-                    height: 110,
-                    decoration: BoxDecoration(
-                        border: Border.all(width: 4, color: Colors.white),
-                        boxShadow: [
-                          BoxShadow(
-                              spreadRadius: 2,
-                              blurRadius: 10,
-                              color: Colors.black.withOpacity(0.1))
-                        ],
-                        shape: BoxShape.circle,
-                        image: const DecorationImage(
-                          image: AssetImage("assets/icons/avatar.png"),
-                          fit: BoxFit.cover,
-                        )),
-                  ),
-                  Positioned(
-                    bottom: 0,
-                    right: 0,
-                    child: Container(
-                      height: 30,
-                      width: 30,
-                      decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(width: 1, color: Colors.white),
-                          color: Colors.white,
-                          image: DecorationImage(
-                              image: AssetImage("assets/icons/camra.png"))),
+                    width: double.infinity,
+                    padding: EdgeInsets.only(bottom: 3.h),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF03BE96),
+                      borderRadius: BorderRadius.only(
+                        bottomLeft: Radius.circular(30),
+                        bottomRight: Radius.circular(30),
+                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        SizedBox(height: 2.h),
+                        CircleAvatar(
+                          radius: 50,
+                          backgroundColor: Colors.white,
+                          child: Text(
+                            fullName.isNotEmpty
+                                ? fullName[0].toUpperCase()
+                                : 'P',
+                            style: GoogleFonts.inter(
+                              fontSize: 40.sp,
+                              fontWeight: FontWeight.bold,
+                              color: const Color(0xFF03BE96),
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 2.h),
+                        Text(
+                          fullName,
+                          style: GoogleFonts.inter(
+                              fontSize: 22.sp,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white),
+                        ),
+                        Text(
+                          'Patient',
+                          style: GoogleFonts.inter(color: Colors.white70),
+                        )
+                      ],
                     ),
                   ),
+
+                  SizedBox(height: 3.h),
+
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 4.w),
+                    child: _buildInfoCard(
+                      'Informations personnelles',
+                      [
+                        _infoTile(Icons.email, 'Email', user?.email ?? ''),
+                        _infoTile(Icons.phone, 'Téléphone',
+                            patientData['phone']?.toString() ?? ''),
+                        _infoTile(Icons.cake, 'Date de naissance',
+                            patientData['dateOfBirth'] ?? ''),
+                        _infoTile(Icons.location_on, 'Adresse',
+                            patientData['address'] ?? ''),
+                      ],
+                    ),
+                  ),
+
+                  SizedBox(height: 3.h),
+
+                  SizedBox(
+                    width: 90.w,
+                    height: 6.h,
+                    child: ElevatedButton.icon(
+                      icon: const Icon(Icons.logout),
+                      label: const Text('Déconnexion'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(15)),
+                      ),
+                      onPressed: _logout,
+                    ),
+                  ),
+                  SizedBox(height: 3.h),
                 ],
               ),
             ),
-            const SizedBox(
-              height: 30,
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  "Amelia Renata",
-                  style: GoogleFonts.poppins(
-                      fontSize: 16.sp,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white),
-                )
-              ],
-            ),
-            SizedBox(
-              height: 30,
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 25),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Container(
-                    height: MediaQuery.of(context).size.height * 0.0900,
-                    width: MediaQuery.of(context).size.width * 0.2500,
-                    child: Column(children: [
-                      Container(
-                        height: MediaQuery.of(context).size.height * 0.0400,
-                        width: MediaQuery.of(context).size.width * 0.1500,
-                        decoration: const BoxDecoration(
-                          image: DecorationImage(
-                              image: AssetImage("assets/icons/callories.png"),
-                              filterQuality: FilterQuality.high),
-                        ),
-                      ),
-                      Text(
-                        "Calories",
-                        style: GoogleFonts.poppins(
-                            fontSize: 13.sp,
-                            fontWeight: FontWeight.w600,
-                            color: Color.fromARGB(255, 245, 243, 243)),
-                      ),
-                      const SizedBox(
-                        height: 5,
-                      ),
-                      Text(
-                        "103lbs",
-                        style: GoogleFonts.poppins(
-                            fontSize: 15.sp,
-                            fontWeight: FontWeight.w600,
-                            color: Color.fromARGB(255, 255, 255, 255)),
-                      )
-                    ]),
-                  ),
-                  Container(
-                    height: 50,
-                    width: 1,
-                    color: Colors.white,
-                  ),
-                  Container(
-                    height: MediaQuery.of(context).size.height * 0.0900,
-                    width: MediaQuery.of(context).size.width * 0.2500,
-                    child: Column(children: [
-                      Container(
-                        height: MediaQuery.of(context).size.height * 0.0400,
-                        width: MediaQuery.of(context).size.width * 0.1500,
-                        decoration: const BoxDecoration(
-                          image: DecorationImage(
-                              image: AssetImage("assets/icons/weight.png"),
-                              filterQuality: FilterQuality.high),
-                        ),
-                      ),
-                      Text(
-                        "Weight",
-                        style: GoogleFonts.poppins(
-                            fontSize: 13.sp,
-                            fontWeight: FontWeight.w600,
-                            color: Color.fromARGB(255, 245, 243, 243)),
-                      ),
-                      const SizedBox(
-                        height: 5,
-                      ),
-                      Text(
-                        "756cal",
-                        style: GoogleFonts.poppins(
-                            fontSize: 15.sp,
-                            fontWeight: FontWeight.w600,
-                            color: Color.fromARGB(255, 255, 255, 255)),
-                      )
-                    ]),
-                  ),
-                  Container(
-                    height: 50,
-                    width: 1,
-                    color: Colors.white,
-                  ),
-                  Container(
-                    height: MediaQuery.of(context).size.height * 0.0900,
-                    width: MediaQuery.of(context).size.width * 0.2500,
-                    child: Column(children: [
-                      Container(
-                        height: MediaQuery.of(context).size.height * 0.0400,
-                        width: MediaQuery.of(context).size.width * 0.1500,
-                        decoration: const BoxDecoration(
-                          image: DecorationImage(
-                              image: AssetImage("assets/icons/heart.png"),
-                              filterQuality: FilterQuality.high),
-                        ),
-                      ),
-                      Text(
-                        "Heart rate",
-                        style: GoogleFonts.poppins(
-                            fontSize: 13.sp,
-                            fontWeight: FontWeight.w600,
-                            color: Color.fromARGB(255, 245, 243, 243)),
-                      ),
-                      const SizedBox(
-                        height: 5,
-                      ),
-                      Text(
-                        "215bpm",
-                        style: GoogleFonts.poppins(
-                            fontSize: 15.sp,
-                            fontWeight: FontWeight.w600,
-                            color: Color.fromARGB(255, 255, 255, 255)),
-                      )
-                    ]),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(
-              height: 50,
-            ),
-            Container(
-              height: 550,
-              width: double.infinity,
-              decoration: const BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(30),
-                      topRight: Radius.circular(30))),
-              child: Column(children: [
-                SizedBox(
-                  height: 50,
-                ),
-                profile_list(
-                  image: "assets/icons/heart2.png",
-                  title: "My Saved",
-                  color: Colors.black87,
-                ),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 25, vertical: 10),
-                  child: Divider(),
-                ),
-                profile_list(
-                  image: "assets/icons/appoint.png",
-                  title: "Appointmnet",
-                  color: Colors.black87,
-                ),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 25, vertical: 10),
-                  child: Divider(),
-                ),
-                profile_list(
-                  image: "assets/icons/chat.png",
-                  title: "FAQs",
-                  color: Colors.black87,
-                ),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 25, vertical: 10),
-                  child: Divider(),
-                ),
-                profile_list(
-                  image: "assets/icons/pay.png",
-                  title: "Payment Method",
-                  color: Colors.black87,
-                ),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 25, vertical: 10),
-                  child: Divider(),
-                ),
-                profile_list(
-                  image: "assets/icons/logout.png",
-                  title: "Log out",
-                  color: Colors.red,
-                ),
-              ]),
-            ),
-          ],
-        ),
+    );
+  }
+
+  Widget _buildInfoCard(String title, List<Widget> children) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(15),
+        boxShadow: [
+          BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 8)
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: EdgeInsets.all(4.w),
+            child: Text(title,
+                style: GoogleFonts.inter(
+                    fontSize: 16.sp, fontWeight: FontWeight.bold)),
+          ),
+          Divider(color: Colors.grey[200]),
+          ...children
+        ],
       ),
     );
+  }
+
+  Widget _infoTile(IconData icon, String label, String value) {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 1.8.h),
+      child: Row(
+        children: [
+          Icon(icon, color: const Color(0xFF03BE96)),
+          SizedBox(width: 3.w),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label,
+                  style: GoogleFonts.inter(color: Colors.grey)),
+              Text(value,
+                  style: GoogleFonts.inter(
+                      fontWeight: FontWeight.w500)),
+            ],
+          )
+        ],
+      ),
+    );
+  }
+
+  void _showEditDialog() {
+    final firstNameCtrl =
+        TextEditingController(text: patientData['firstName']);
+    final lastNameCtrl =
+        TextEditingController(text: patientData['lastName']);
+    final phoneCtrl =
+        TextEditingController(text: patientData['phone']?.toString());
+    final addressCtrl =
+        TextEditingController(text: patientData['address']);
+    final dobCtrl =
+        TextEditingController(text: patientData['dateOfBirth']);
+
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Modifier profil'),
+        content: SingleChildScrollView(
+          child: Column(
+            children: [
+              TextField(controller: firstNameCtrl, decoration: const InputDecoration(labelText: 'Prénom')),
+              TextField(controller: lastNameCtrl, decoration: const InputDecoration(labelText: 'Nom')),
+              TextField(controller: phoneCtrl, decoration: const InputDecoration(labelText: 'Téléphone')),
+              TextField(controller: dobCtrl, decoration: const InputDecoration(labelText: 'Date de naissance')),
+              TextField(controller: addressCtrl, decoration: const InputDecoration(labelText: 'Adresse')),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Annuler')),
+          ElevatedButton(
+            onPressed: () async {
+              await FirebaseFirestore.instance
+                  .collection('users')
+                  .doc(user!.uid)
+                  .update({
+                'firstName': firstNameCtrl.text,
+                'lastName': lastNameCtrl.text,
+                'phone': phoneCtrl.text,
+                'address': addressCtrl.text,
+                'dateOfBirth': dobCtrl.text,
+              });
+              await loadPatientData();
+              Navigator.pop(context);
+            },
+            child: const Text('Enregistrer'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _logout() async {
+    await FirebaseAuth.instance.signOut();
+    if (mounted) {
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const Login()),
+        (route) => false,
+      );
+    }
   }
 }
