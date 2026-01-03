@@ -64,6 +64,57 @@ class _MedicalRecordDetailScreenState extends State<MedicalRecordDetailScreen> {
             );
           }
 
+          // Check for errors
+          if (snapshot.hasError) {
+            print('ERROR loading record: ${snapshot.error}');
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.error_outline, size: 80, color: Colors.red[300]),
+                  SizedBox(height: 2.h),
+                  Text(
+                    'Erreur de chargement',
+                    style: GoogleFonts.inter(
+                      fontSize: 18.sp,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                  SizedBox(height: 1.h),
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 10.w),
+                    child: Text(
+                      snapshot.error.toString(),
+                      style: GoogleFonts.inter(
+                        fontSize: 12.sp,
+                        color: Colors.grey[500],
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                  SizedBox(height: 3.h),
+                  ElevatedButton.icon(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.arrow_back),
+                    label: const Text('Retour'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF03BE96),
+                      foregroundColor: Colors.white,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 6.w,
+                        vertical: 1.5.h,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
+
           if (!snapshot.hasData || snapshot.data == null) {
             return Center(
               child: Column(

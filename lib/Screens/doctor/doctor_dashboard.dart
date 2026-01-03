@@ -7,6 +7,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'add_medical_record_screen.dart';
 import 'medical_records_screen.dart';
 import 'doctor_stats_screen.dart';
+import 'doctor_medical_evaluations_screen.dart';
 
 
 
@@ -251,6 +252,18 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
                       },
                     ),
                     _buildQuickAction(
+                      Icons.note_alt,
+                      'Évaluations des visites',
+                      Colors.deepPurple,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const MedicalEvaluationsScreen()),
+                        );
+                      },
+                    ),
+
+                    _buildQuickAction(
                     FontAwesomeIcons.chartLine,
                     'Statistiques',
                     Colors.purple,
@@ -261,6 +274,7 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
                       );
                     },
                   ),
+
 
 
                   ],

@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class MedicalRecord {
   final String id;
   final String patientName;
@@ -20,6 +22,26 @@ class MedicalRecord {
   });
 
   factory MedicalRecord.fromMap(Map<String, dynamic> data, String id) {
+    DateTime parsedDate = DateTime.now();
+    
+    try {
+      final createdAtField = data['createdAt'];
+      
+      if (createdAtField != null) {
+        if (createdAtField is Timestamp) {
+          parsedDate = createdAtField.toDate();
+        } else if (createdAtField is DateTime) {
+          parsedDate = createdAtField;
+        } else {
+          // Try dynamic conversion
+          parsedDate = (createdAtField as dynamic).toDate();
+        }
+      }
+    } catch (e) {
+      print('Warning: Could not parse createdAt, using current time: $e');
+      parsedDate = DateTime.now();
+    }
+    
     return MedicalRecord(
       id: id,
       patientName: data['patientName'] ?? 'Patient',
@@ -27,7 +49,7 @@ class MedicalRecord {
       phone: data['phone'] ?? '',
       socialSecurityNumber: data['socialSecurityNumber'] ?? '',
       medicalHistory: data['medicalHistory'] ?? '',
-      createdAt: (data['createdAt'] as dynamic)?.toDate() ?? DateTime.now(),
+      createdAt: parsedDate,
       doctorId: data['doctorId'] ?? '',
     );
   }
@@ -39,7 +61,7 @@ class MedicalRecord {
       'phone': phone,
       'socialSecurityNumber': socialSecurityNumber,
       'medicalHistory': medicalHistory,
-      'createdAt': createdAt,
+      'createdAt': createdAt, // Keep as DateTime for backward compatibility
       'doctorId': doctorId,
     };
   }
